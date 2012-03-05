@@ -53,7 +53,11 @@ for FILE in $FILES
 do
     echo "$FILE" | egrep -q "$PHPCS_FILE_PATTERN"
     RETVAL=$?
-    if [ "$RETVAL" -eq "0" ]
+    echo "$FILE" | egrep -q "$PHPCS_IGNORE"
+    RETVAL_IGNORE=$?
+    # File is found in file pattern and not found in ignore pattern.
+    # Then add it to files to check.
+    if [ "$RETVAL" -eq "0" ] && [ "$RETVAL_IGNORE" -eq "1" ]
     then
         FILES_TO_CHECK="$FILES_TO_CHECK $FILE"
     fi
@@ -61,13 +65,6 @@ done
 
 if [ "$FILES_TO_CHECK" == "" ]; then
     exit 0
-fi
-
-# execute the code sniffer
-if [ "$PHPCS_IGNORE" != "" ]; then
-    IGNORE="--ignore=$PHPCS_IGNORE"
-else
-    IGNORE=""
 fi
 
 # Copy contents of staged version of files to temporary staging area
@@ -85,7 +82,7 @@ do
   STAGED_FILES="$STAGED_FILES $TMP_STAGING/$FILE"
 done
 
-OUTPUT=$($PHPCS_BIN -s --standard=$PHPCS_CODING_STANDARD $IGNORE $STAGED_FILES)
+OUTPUT=$($PHPCS_BIN -s --standard=$PHPCS_CODING_STANDARD $STAGED_FILES)
 RETVAL=$?
 
 # delete temporary copy of staging area
